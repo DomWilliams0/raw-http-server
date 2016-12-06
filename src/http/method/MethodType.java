@@ -2,6 +2,7 @@ package http.method;
 
 import http.method.handlers.MethodGET;
 import http.method.handlers.MethodHandler;
+import http.method.handlers.MethodPOST;
 import http.method.handlers.MethodUnimplemented;
 
 public enum MethodType
@@ -29,8 +30,9 @@ public enum MethodType
 		{
 			case GET:
 				return new MethodGET();
-			case HEAD:
 			case POST:
+				return new MethodPOST();
+			case HEAD:
 			case PUT:
 			case DELETE:
 			default:

@@ -6,34 +6,31 @@ import http.method.ResponseParameters;
 
 import java.nio.CharBuffer;
 
-public class MethodGET implements MethodHandler
+public class MethodPOST implements MethodHandler
 {
 	@Override
 	public ResponseParameters handle(RequestParameters req)
 	{
 		String staticResponse =
 			"<html>" +
-				"<h1>Welcome to " + req.getPath() + "</h1>" +
-
-				// TODO display parsed parameters
-				"<h3>GET parameters</h3>" +
-				"<p>TODO</p>" +
-				"<hr>" +
+				"<h1>You just POSTed to " + req.getPath() + "</h1>" +
 
 				// display parsed headers
 				"<h3>Request Headers</h3>" + MethodHandler.getRenderedHeaderList(req.getHeaders()) +
 				"<hr>" +
 
-			"</html>";
+				"<h3>Request Body</h3>" +
+				"<h4>" + req.getBody().length() + " byte(s)</h4>" + String.valueOf(req.getBody()) +
+				"<hr>" +
+
+				"</html>";
 
 		CharBuffer staticBuffer = CharBuffer.wrap(staticResponse.toCharArray());
 
-		ResponseParameters response = new ResponseParameters(StatusCode.OK, staticBuffer);
-		response.getHeaders().addHeader(Header.CONTENT_TYPE, "text/html");
-		response.getHeaders().addHeader("X-One-Two-Three", "123");
 
-		return response;
+		ResponseParameters resp = new ResponseParameters(StatusCode.OK, staticBuffer);
+		resp.getHeaders().addHeader(Header.CONTENT_TYPE, "text/html");
 
+		return resp;
 	}
-
 }
