@@ -13,10 +13,6 @@ public class MethodGET implements MethodHandler
 	@Override
 	public ResponseParameters handle(String path)
 	{
-		Map<String, String> testHeaders = new HashMap<>();
-		testHeaders.put(Header.CONTENT_TYPE.getKey(), "text/html");
-		testHeaders.put("X-One-Two-Three", "123");
-
 		String staticResponse =
 			"<html>" +
 				"<h1>Welcome to " + path + "</h1>" +
@@ -32,6 +28,12 @@ public class MethodGET implements MethodHandler
 			"</html>";
 
 		CharBuffer staticBuffer = CharBuffer.wrap(staticResponse.toCharArray());
-		return new ResponseParameters(StatusCode.OK, testHeaders, staticBuffer);
+
+		ResponseParameters response = new ResponseParameters(StatusCode.OK, staticBuffer);
+		response.getHeaders().addHeader(Header.CONTENT_TYPE, "text/html");
+		response.getHeaders().addHeader("X-One-Two-Three", "123");
+
+		return response;
+
 	}
 }

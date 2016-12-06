@@ -2,6 +2,7 @@ package http;
 
 import http.method.MethodType;
 import http.method.ResponseParameters;
+import http.method.handlers.Headers;
 import http.method.handlers.MethodHandler;
 
 import java.io.*;
@@ -92,9 +93,12 @@ public class Request
 
 		// send response
 		sendStatusLine(response.getCode());
-		response.forEachHeader(this::sendHeader);
-		if (response.getHeaderCount() > 0)
+
+		Headers headers = response.getHeaders();
+		headers.forEachHeader(this::sendHeader);
+		if (headers.getHeaderCount() > 0)
 			sendNewLine();
+
 		sendBody(response.getBody());
 	}
 

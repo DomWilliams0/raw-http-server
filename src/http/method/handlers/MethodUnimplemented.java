@@ -8,6 +8,6 @@ public class MethodUnimplemented implements MethodHandler
 	@Override
 	public ResponseParameters handle(String path)
 	{
-		return new ResponseParameters(StatusCode.NOT_IMPLEMENTED, null, null);
+		return new ResponseParameters(StatusCode.NOT_IMPLEMENTED, null);
 	}
 }
