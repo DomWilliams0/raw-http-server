@@ -11,6 +11,10 @@ public class MethodGET implements MethodHandler
 	@Override
 	public ResponseParameters handle(RequestParameters req)
 	{
+		if (req.getPath().equals("/favicon.ico"))
+			return new ResponseParameters(StatusCode.NOT_FOUND, null);
+
+
 		String staticResponse =
 			"<html>" +
 				"<h1>Welcome to " + req.getPath() + "</h1>" +
