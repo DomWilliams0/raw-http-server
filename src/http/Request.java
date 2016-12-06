@@ -1,7 +1,13 @@
 package http;
 
+import http.method.handlers.MethodHandler;
+import http.method.ResponseParameters;
+import http.method.MethodType;
+
 import java.io.*;
 import java.net.Socket;
+import java.nio.Buffer;
+import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -50,6 +56,7 @@ public class Request
 
 	public void handle() throws IOException
 	{
+		// read full request
 		BodyResult bodyResult = BodyResult.NOT_READ_YET;
 		if (!parseRequestLine() ||
 			!parseHeaders() ||
@@ -63,8 +70,27 @@ public class Request
 			return;
 		}
 
+		// parse method
+		MethodType methodType = MethodType.parse(method);
+		if (methodType == null)
+		{
+			sendStatusLine(StatusCode.BAD_REQUEST);
+			return;
+		}
 
-		sendStatusLine(StatusCode.OK);
+		// TODO replace only sending status line above ^ with ResponseParameters
+		// TODO GET parameters
+
+		// handle method
+		MethodHandler handler = methodType.getHandler();
+		ResponseParameters response = handler.handle(path);
+
+		// send response
+		sendStatusLine(response.getCode());
+		response.forEachHeader(this::sendHeader);
+		if (response.getHeaderCount() > 0)
+			sendNewLine();
+		sendBody(response.getBody());
 	}
 
 	/**
@@ -202,6 +228,27 @@ public class Request
 			HTTP_VERSION, statusCode.getCode(), statusCode.getReason(), CR_LF));
 
 		writer.flush();
+	}
+
+	private void sendHeader(String key, String value) throws IOException
+	{
+		writer.write(String.format("%s: %s%s", key, value, CR_LF));
+		writer.flush();
+	}
+
+	private void sendNewLine() throws IOException
+	{
+		writer.write(CR_LF);
+		writer.flush();
+	}
+
+	private void sendBody(CharBuffer buffer) throws IOException
+	{
+		if (buffer != null)
+		{
+			writer.write(buffer.array());
+			writer.flush();
+		}
 	}
 
 	/**
