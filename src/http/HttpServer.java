@@ -35,8 +35,6 @@ public class HttpServer
 			try
 			{
 				client = socket.accept();
-				System.out.println("Client connected");
-
 				Request req = new Request(client);
 				req.handle();
 			} catch (IOException e)
@@ -48,7 +46,6 @@ public class HttpServer
 				{
 					try
 					{
-						System.out.println("Client disconnected");
 						client.close();
 					} catch (IOException e)
 					{

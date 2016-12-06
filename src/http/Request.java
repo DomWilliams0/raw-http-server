@@ -1,12 +1,11 @@
 package http;
 
-import http.method.handlers.MethodHandler;
-import http.method.ResponseParameters;
 import http.method.MethodType;
+import http.method.ResponseParameters;
+import http.method.handlers.MethodHandler;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,12 +36,14 @@ public class Request
 	}
 
 
-	private BufferedReader reader;
-	private BufferedWriter writer;
+	private final BufferedReader reader;
+	private final BufferedWriter writer;
 
 	private String path;
 	private String method; // TODO enum
-	private Map<String, String> headers;
+	private final Map<String, String> headers;
+
+	private final String clientAddress;
 
 	public Request(Socket socket) throws IOException
 	{
@@ -52,6 +53,8 @@ public class Request
 		path = "";
 		method = "";
 		headers = new HashMap<>();
+
+		clientAddress = socket.getRemoteSocketAddress().toString();
 	}
 
 	public void handle() throws IOException
@@ -69,6 +72,8 @@ public class Request
 			sendStatusLine(code);
 			return;
 		}
+
+		System.out.printf("%s - %s %s\n", clientAddress, method, path);
 
 		// parse method
 		MethodType methodType = MethodType.parse(method);
