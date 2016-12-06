@@ -2,6 +2,8 @@ package http;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,13 +11,23 @@ public class Request
 {
 	private static final String HTTP_VERSION;
 	private static final String CR_LF;
+
 	private static final Pattern REQUEST_LINE;
+	private static final Pattern HEADER;
 
 	static
 	{
 		REQUEST_LINE = Pattern.compile("^([A-Z]+) ([a-zA-Z0-9.-_~!$&'()*+,;=:@%]+) HTTP/(\\d\\.\\d)$");
+		HEADER = Pattern.compile("^([a-zA-Z-_]+): (.+)");
 		HTTP_VERSION = "1.1";
 		CR_LF = "\r\n";
+	}
+
+	private enum BodyResult
+	{
+		OK,
+		BAD_CONTENT_LENGTH,
+		NOT_READ_YET
 	}
 
 
@@ -24,6 +36,7 @@ public class Request
 
 	private String path;
 	private String method; // TODO enum
+	private Map<String, String> headers;
 
 	public Request(Socket socket) throws IOException
 	{
@@ -32,20 +45,33 @@ public class Request
 
 		path = "";
 		method = "";
+		headers = new HashMap<>();
 	}
 
 	public void handle() throws IOException
 	{
-		// request line
-		if (!parseRequestLine())
+		BodyResult bodyResult = BodyResult.NOT_READ_YET;
+		if (!parseRequestLine() ||
+			!parseHeaders() ||
+			(bodyResult = parseBody()) != BodyResult.OK)
 		{
-			sendResponseCode(StatusCode.BAD_REQUEST);
+			StatusCode code = StatusCode.BAD_REQUEST;
+			if (bodyResult == BodyResult.BAD_CONTENT_LENGTH)
+				code = StatusCode.LENGTH_REQUIRED;
+
+			sendStatusLine(code);
 			return;
 		}
 
-		sendResponseCode(StatusCode.OK);
+
+		sendStatusLine(StatusCode.OK);
 	}
 
+	/**
+	 * Reads the request line and parses the method, requested path and HTTP version
+	 *
+	 * @return True if all fields were well formed and successfully read, otherwise false
+	 */
 	private boolean parseRequestLine() throws IOException
 	{
 		String requestLine = readLine();
@@ -54,13 +80,13 @@ public class Request
 		if (!matcher.matches())
 			return false;
 
-		String method = matcher.group(1);
+		method = matcher.group(1);
 		path = matcher.group(2);
 		String version = matcher.group(3);
 
 		// TODO look at yourself, you can do better
-		if (!method.equals("GET"))
-			return false;
+//		if (!method.equals("GET"))
+//			return false;
 
 		if (path.isEmpty())
 			return false;
@@ -72,9 +98,105 @@ public class Request
 	}
 
 	/**
-	 * Sends just the status code and reason
+	 * Reads all request headers and stores them in the headers map
+	 *
+	 * @return True if all headers were well formed and successfully read, otherwise false
 	 */
-	private void sendResponseCode(StatusCode statusCode) throws IOException
+	private boolean parseHeaders() throws IOException
+	{
+		boolean success = true;
+
+		String line;
+		Matcher matcher;
+		while (!(line = readLine()).isEmpty())
+		{
+			matcher = HEADER.matcher(line);
+			if (!matcher.matches())
+			{
+				success = false;
+				break;
+			}
+
+			String key = matcher.group(1).toLowerCase();
+			String value = matcher.group(2);
+			headers.put(key, value);
+
+		}
+
+		return success;
+	}
+
+	/**
+	 * Reads the request body, if any, obeying the Content-Length header. If not present, it will
+	 * read until the end of the stream.
+	 */
+	private BodyResult parseBody() throws IOException
+	{
+		BodyResult result = BodyResult.NOT_READ_YET;
+		int bytesRead = 0;
+
+		if (!reader.ready())
+		{
+			result = BodyResult.OK;
+		} else
+		{
+			Integer contentLength = 0;
+			String contentLengthStr = getHeader(Header.CONTENT_LENGTH);
+			if (contentLengthStr != null)
+			{
+				try
+				{
+					contentLength = Integer.parseInt(contentLengthStr);
+				} catch (NumberFormatException e)
+				{
+					contentLength = 0;
+					result = BodyResult.BAD_CONTENT_LENGTH;
+				}
+			}
+
+			if (result == BodyResult.NOT_READ_YET)
+			{
+				// specified content length
+				if (contentLength > 0)
+				{
+					char[] buffer = new char[contentLength];
+					bytesRead = reader.read(buffer);
+
+					if (reader.ready() || bytesRead != contentLength)
+					{
+						result = BodyResult.BAD_CONTENT_LENGTH;
+					} else
+					{
+						result = BodyResult.OK;
+					}
+					// TODO use buffer
+				}
+
+				// read until the end
+				else
+				{
+					StringBuilder buffer = new StringBuilder();
+					String line;
+					while ((line = reader.readLine()) != null)
+					{
+						buffer.append(line);
+					}
+					buffer.trimToSize();
+					bytesRead = buffer.length();
+					result = BodyResult.OK;
+					// TODO use buffer
+
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Sends just the status line
+	 */
+	private void sendStatusLine(StatusCode statusCode) throws IOException
 	{
 		writer.write(String.format("HTTP/%s %d %s%s",
 			HTTP_VERSION, statusCode.getCode(), statusCode.getReason(), CR_LF));
@@ -82,6 +204,9 @@ public class Request
 		writer.flush();
 	}
 
+	/**
+	 * Wrapper around reader.readLine() that throws {@link EOFException} instead of returning null
+	 */
 	private String readLine() throws IOException
 	{
 		String s = reader.readLine();
@@ -89,5 +214,21 @@ public class Request
 			throw new EOFException();
 
 		return s;
+	}
+
+	/**
+	 * @return The header sent with the given key, or null if not found
+	 */
+	private String getHeader(String key)
+	{
+		return headers.getOrDefault(key, null);
+	}
+
+	/**
+	 * @return The header sent with the given key, or null if not found
+	 */
+	private String getHeader(Header header)
+	{
+		return getHeader(header.getKey());
 	}
 }

@@ -3,7 +3,8 @@ package http;
 public enum StatusCode
 {
 	OK(200, "OK"),
-	BAD_REQUEST(400, "Bad Request");
+	BAD_REQUEST(400, "Bad Request"),
+	LENGTH_REQUIRED(411, "Length Required");
 
 
 	private final int code;
