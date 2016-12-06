@@ -15,6 +15,34 @@ public class HttpServer
 		running = true;
 	}
 
+	private void handleClient(Socket client)
+	{
+		Thread t = new Thread(() ->
+		{
+			try
+			{
+				Request r = new Request(client);
+				r.handle();
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+			} finally
+			{
+				if (!client.isClosed())
+				{
+					try
+					{
+						client.close();
+					} catch (IOException e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+		});
+
+		t.start();
+	}
 
 	private boolean serve(String iface, int port)
 	{
@@ -31,30 +59,13 @@ public class HttpServer
 		System.out.printf("Listening on %s:%d...\n", iface, port);
 		while (running)
 		{
-			Socket client = null;
 			try
 			{
-				client = socket.accept();
-				Request req = new Request(client);
-				req.handle();
+				handleClient(socket.accept());
 			} catch (IOException e)
 			{
 				e.printStackTrace();
-			} finally
-			{
-				if (client != null)
-				{
-					try
-					{
-						client.close();
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					}
-				}
 			}
-
-
 		}
 
 		// close socket
