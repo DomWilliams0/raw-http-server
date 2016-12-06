@@ -6,7 +6,7 @@ import http.method.ResponseParameters;
 public class MethodUnimplemented implements MethodHandler
 {
 	@Override
-	public ResponseParameters handle(String path)
+	public ResponseParameters handle(RequestParameters req)
 	{
 		return new ResponseParameters(StatusCode.NOT_IMPLEMENTED, null);
 	}

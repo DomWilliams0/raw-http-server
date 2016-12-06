@@ -5,25 +5,30 @@ import http.StatusCode;
 import http.method.ResponseParameters;
 
 import java.nio.CharBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MethodGET implements MethodHandler
 {
 	@Override
-	public ResponseParameters handle(String path)
+	public ResponseParameters handle(RequestParameters req)
 	{
 		String staticResponse =
 			"<html>" +
-				"<h1>Welcome to " + path + "</h1>" +
+				"<h1>Welcome to " + req.getPath() + "</h1>" +
 
 				// TODO display parsed parameters
-				"<h4>GET parameters</h4>" +
+				"<h3>GET parameters</h3>" +
 				"<p>TODO</p>" +
+				"<hr>" +
 
-				// TODO display parsed headers
-				"<h4>Request Headers</h4>" +
-				"<p>TODO</p>" +
+				// display parsed headers
+				"<h3>Request Headers</h3>" + getRenderedHeaderList(req.getHeaders()) +
+				"<hr>" +
+
+				(req.getBody() == null ? "" :
+				"<h3>Request Body</h3>" +
+				"<h4>" + req.getBody().length() + " byte(s)</h4>" + req.getBody().toString() +
+				"<hr>"
+				) +
 
 			"</html>";
 
@@ -35,5 +40,14 @@ public class MethodGET implements MethodHandler
 
 		return response;
 
+	}
+
+	private String getRenderedHeaderList(Headers headers)
+	{
+		StringBuilder list = new StringBuilder("<ul>");
+		headers.forEachHeader((k, v) ->
+			list.append(String.format("<li><strong>%s</strong>: %s</li>", k, v)));
+		list.append("</ul>");
+		return list.toString();
 	}
 }

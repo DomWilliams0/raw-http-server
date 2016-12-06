@@ -4,12 +4,11 @@ import http.method.MethodType;
 import http.method.ResponseParameters;
 import http.method.handlers.Headers;
 import http.method.handlers.MethodHandler;
+import http.method.handlers.RequestParameters;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.CharBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,9 +39,7 @@ public class Request
 	private final BufferedReader reader;
 	private final BufferedWriter writer;
 
-	private String path;
-	private String method; // TODO enum
-	private final Map<String, String> headers;
+	private RequestParameters.RequestParametersBuilder reqBuilder;
 
 	private final String clientAddress;
 
@@ -51,10 +48,7 @@ public class Request
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-		path = "";
-		method = "";
-		headers = new HashMap<>();
-
+		reqBuilder = new RequestParameters.RequestParametersBuilder();
 		clientAddress = socket.getRemoteSocketAddress().toString();
 	}
 
@@ -74,10 +68,10 @@ public class Request
 			return;
 		}
 
-		System.out.printf("%s - %s %s\n", clientAddress, method, path);
+		System.out.printf("%s - %s %s\n", clientAddress, reqBuilder.getMethod(), reqBuilder.getPath());
 
-		// parse method
-		MethodType methodType = MethodType.parse(method);
+		// parse rawMethod
+		MethodType methodType = MethodType.parse(reqBuilder.getMethod());
 		if (methodType == null)
 		{
 			sendStatusLine(StatusCode.BAD_REQUEST);
@@ -87,15 +81,17 @@ public class Request
 		// TODO replace only sending status line above ^ with ResponseParameters
 		// TODO GET parameters
 
-		// handle method
+		RequestParameters req = reqBuilder.build();
+
+		// handle rawMethod
 		MethodHandler handler = methodType.getHandler();
-		ResponseParameters response = handler.handle(path);
+		ResponseParameters response = handler.handle(req);
 
 		// send response
 		sendStatusLine(response.getCode());
 
 		Headers headers = response.getHeaders();
-		headers.forEachHeader(this::sendHeader);
+		headers.forEachHeaderIO(this::sendHeader);
 		if (headers.getHeaderCount() > 0)
 			sendNewLine();
 
@@ -115,19 +111,19 @@ public class Request
 		if (!matcher.matches())
 			return false;
 
-		method = matcher.group(1);
-		path = matcher.group(2);
+		String rawMethod = matcher.group(1);
+		String rawPath = matcher.group(2);
 		String version = matcher.group(3);
 
-		// TODO look at yourself, you can do better
-//		if (!method.equals("GET"))
-//			return false;
-
-		if (path.isEmpty())
+		if (rawPath.isEmpty())
 			return false;
 
 		if (!version.equals(HTTP_VERSION))
 			return false;
+
+		reqBuilder
+			.setMethod(rawMethod)
+			.setPath(rawPath);
 
 		return true;
 	}
@@ -154,7 +150,7 @@ public class Request
 
 			String key = matcher.group(1).toLowerCase();
 			String value = matcher.group(2);
-			headers.put(key, value);
+			reqBuilder.addHeader(key, value);
 
 		}
 
@@ -167,8 +163,8 @@ public class Request
 	 */
 	private BodyResult parseBody() throws IOException
 	{
+		// TODO binary body! it won't always be text
 		BodyResult result = BodyResult.NOT_READ_YET;
-		int bytesRead = 0;
 
 		if (!reader.ready())
 		{
@@ -176,7 +172,7 @@ public class Request
 		} else
 		{
 			Integer contentLength = 0;
-			String contentLengthStr = getHeader(Header.CONTENT_LENGTH);
+			String contentLengthStr = reqBuilder.getHeaders().getHeader(Header.CONTENT_LENGTH);
 			if (contentLengthStr != null)
 			{
 				try
@@ -195,7 +191,7 @@ public class Request
 				if (contentLength > 0)
 				{
 					char[] buffer = new char[contentLength];
-					bytesRead = reader.read(buffer);
+					int bytesRead = reader.read(buffer);
 
 					if (reader.ready() || bytesRead != contentLength)
 					{
@@ -203,8 +199,8 @@ public class Request
 					} else
 					{
 						result = BodyResult.OK;
+						reqBuilder.setBody(CharBuffer.wrap(buffer));
 					}
-					// TODO use buffer
 				}
 
 				// read until the end
@@ -214,13 +210,11 @@ public class Request
 					String line;
 					while ((line = reader.readLine()) != null)
 					{
-						buffer.append(line);
+						buffer.append(line).append("\n");
 					}
-					buffer.trimToSize();
-					bytesRead = buffer.length();
 					result = BodyResult.OK;
-					// TODO use buffer
 
+					reqBuilder.setBody(CharBuffer.wrap(buffer));
 				}
 			}
 		}
@@ -270,21 +264,5 @@ public class Request
 			throw new EOFException();
 
 		return s;
-	}
-
-	/**
-	 * @return The header sent with the given key, or null if not found
-	 */
-	private String getHeader(String key)
-	{
-		return headers.getOrDefault(key, null);
-	}
-
-	/**
-	 * @return The header sent with the given key, or null if not found
-	 */
-	private String getHeader(Header header)
-	{
-		return getHeader(header.getKey());
 	}
 }

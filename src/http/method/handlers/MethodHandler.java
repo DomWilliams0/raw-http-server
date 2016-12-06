@@ -4,5 +4,5 @@ import http.method.ResponseParameters;
 
 public interface MethodHandler
 {
-	ResponseParameters handle(String path); // TODO body too
+	ResponseParameters handle(RequestParameters req);
 }

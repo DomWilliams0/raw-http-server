@@ -5,6 +5,7 @@ import http.Header;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 public class Headers
 {
@@ -26,13 +27,27 @@ public class Headers
 		map.put(key, value);
 	}
 
+	public String getHeader(Header key)
+	{
+		return getHeader(key.getKey());
+	}
+
+	public String getHeader(String key)
+	{
+		return map.getOrDefault(key, null);
+	}
+
 	public int getHeaderCount()
 	{
 		return map.size();
 	}
 
+	public void forEachHeader(BiConsumer<String, String> action)
+	{
+		map.forEach(action);
+	}
 
-	public void forEachHeader(IOHeaderConsumer action) throws IOException
+	public void forEachHeaderIO(IOHeaderConsumer action) throws IOException
 	{
 		for (Map.Entry<String, String> entry : map.entrySet())
 			action.accept(entry.getKey(), entry.getValue());
