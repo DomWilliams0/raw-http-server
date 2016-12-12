@@ -5,6 +5,9 @@ import http.method.MethodType;
 
 import java.nio.CharBuffer;
 
+/**
+ * Represents a request from a client to the server
+ */
 public class RequestParameters
 {
 	private final MethodType method;
@@ -12,6 +15,12 @@ public class RequestParameters
 	private final Headers requestHeaders;
 	private final CharBuffer body;
 
+	/**
+	 * @param method         The HTTP method
+	 * @param path           The requested path
+	 * @param requestHeaders The request headers
+	 * @param body           The request body - can be null
+	 */
 	private RequestParameters(MethodType method, String path, Headers requestHeaders, CharBuffer body)
 	{
 		this.method = method;
@@ -20,26 +29,41 @@ public class RequestParameters
 		this.body = body;
 	}
 
+	/**
+	 * @return The method
+	 */
 	public MethodType getMethod()
 	{
 		return method;
 	}
 
+	/**
+	 * @return The requested path
+	 */
 	public String getPath()
 	{
 		return path;
 	}
 
+	/**
+	 * @return The request headers
+	 */
 	public Headers getHeaders()
 	{
 		return requestHeaders;
 	}
 
+	/**
+	 * @return The request body, if any
+	 */
 	public CharBuffer getBody()
 	{
 		return body;
 	}
 
+	/**
+	 * A helper class to build a Request, following the Builder pattern
+	 */
 	public static class RequestParametersBuilder
 	{
 		private String method;

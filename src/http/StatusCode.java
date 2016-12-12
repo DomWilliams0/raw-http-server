@@ -1,5 +1,8 @@
 package http;
 
+/**
+ * HTTP response status codes
+ */
 public enum StatusCode
 {
 	OK(200, "OK"),
@@ -18,11 +21,17 @@ public enum StatusCode
 		this.reason = reason;
 	}
 
+	/**
+	 * @return The integer value of this response code
+	 */
 	public int getCode()
 	{
 		return code;
 	}
 
+	/**
+	 * @return The standard-defined description of this response code
+	 */
 	public String getReason()
 	{
 		return reason;

@@ -15,6 +15,11 @@ public class HttpServer
 		running = true;
 	}
 
+	/**
+	 * Spawns a new thread to handle the given client
+	 *
+	 * @param client The client's socket
+	 */
 	private void handleClient(Socket client)
 	{
 		Thread t = new Thread(() ->
@@ -44,6 +49,13 @@ public class HttpServer
 		t.start();
 	}
 
+	/**
+	 * Starts the server at the given address. Blocks until the boolean running is false
+	 *
+	 * @param iface The interface to listen on
+	 * @param port  The port to listen on
+	 * @return If the server started and shutdown cleanly
+	 */
 	private boolean serve(String iface, int port)
 	{
 		// open socket
@@ -84,6 +96,7 @@ public class HttpServer
 
 	public static void main(String[] args)
 	{
+		// TODO as arguments
 		String iface = "127.0.0.1";
 		int port = 65040;
 

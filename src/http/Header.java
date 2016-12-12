@@ -1,5 +1,8 @@
 package http;
 
+/**
+ * Represents a standard-defined header key
+ */
 public enum Header
 {
 	CONTENT_LENGTH("Content-Length"),
@@ -12,6 +15,9 @@ public enum Header
 		this.key = key.toLowerCase();
 	}
 
+	/**
+	 * @return The header key to use
+	 */
 	public String getKey()
 	{
 		return key;

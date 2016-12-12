@@ -12,6 +12,9 @@ import java.nio.CharBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Represents a single request to the server
+ */
 public class Request
 {
 	private static final String HTTP_VERSION;
@@ -28,6 +31,9 @@ public class Request
 		CR_LF = "\r\n";
 	}
 
+	/**
+	 * A helper enum to indicate the result of reading the request's body
+	 */
 	private enum BodyResult
 	{
 		OK,
@@ -43,6 +49,9 @@ public class Request
 
 	private final String clientAddress;
 
+	/**
+	 * @param socket The client's socket
+	 */
 	public Request(Socket socket) throws IOException
 	{
 		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -52,6 +61,9 @@ public class Request
 		clientAddress = socket.getRemoteSocketAddress().toString();
 	}
 
+	/**
+	 * Reads the full request and send the appropriate response
+	 */
 	public void handle() throws IOException
 	{
 		// read full request
@@ -101,7 +113,7 @@ public class Request
 	/**
 	 * Reads the request line and parses the method, requested path and HTTP version
 	 *
-	 * @return True if all fields were well formed and successfully read, otherwise false
+	 * @return If all fields were well formed and successfully read and parsed
 	 */
 	private boolean parseRequestLine() throws IOException
 	{
@@ -131,7 +143,7 @@ public class Request
 	/**
 	 * Reads all request headers and stores them in the headers map
 	 *
-	 * @return True if all headers were well formed and successfully read, otherwise false
+	 * @return If all headers were well formed and successfully read
 	 */
 	private boolean parseHeaders() throws IOException
 	{
@@ -151,15 +163,14 @@ public class Request
 			String key = matcher.group(1).toLowerCase();
 			String value = matcher.group(2);
 			reqBuilder.addHeader(key, value);
-
 		}
 
 		return success;
 	}
 
 	/**
-	 * Reads the request body, if any, obeying the Content-Length header. If not present, it will
-	 * read until the end of the stream.
+	 * Reads the request body, if any, obeying the Content-Length header.
+	 * If not present, it will read until the end of the stream.
 	 */
 	private BodyResult parseBody() throws IOException
 	{
@@ -168,10 +179,13 @@ public class Request
 
 		if (!reader.ready())
 		{
+			// no body to read
 			result = BodyResult.OK;
 		} else
 		{
 			Integer contentLength = 0;
+
+			// parse content length header, if given
 			String contentLengthStr = reqBuilder.getHeaders().getHeader(Header.CONTENT_LENGTH);
 			if (contentLengthStr != null)
 			{
@@ -185,6 +199,7 @@ public class Request
 				}
 			}
 
+			// safe to continue
 			if (result == BodyResult.NOT_READ_YET)
 			{
 				// specified content length
@@ -223,7 +238,9 @@ public class Request
 	}
 
 	/**
-	 * Sends just the status line
+	 * Writes the status line
+	 *
+	 * @param statusCode The response code to send
 	 */
 	private void sendStatusLine(StatusCode statusCode) throws IOException
 	{
@@ -233,18 +250,32 @@ public class Request
 		writer.flush();
 	}
 
+	/**
+	 * Writes the given header
+	 *
+	 * @param key   The header's key
+	 * @param value The header's value
+	 */
 	private void sendHeader(String key, String value) throws IOException
 	{
 		writer.write(String.format("%s: %s%s", key, value, CR_LF));
 		writer.flush();
 	}
 
+	/**
+	 * Writes \r\n
+	 */
 	private void sendNewLine() throws IOException
 	{
 		writer.write(CR_LF);
 		writer.flush();
 	}
 
+	/**
+	 * Writes the given buffer to the client. Can be null
+	 *
+	 * @param buffer The buffer to write
+	 */
 	private void sendBody(CharBuffer buffer) throws IOException
 	{
 		if (buffer != null)
