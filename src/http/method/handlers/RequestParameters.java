@@ -4,6 +4,8 @@ import http.Header;
 import http.method.MethodType;
 
 import java.nio.CharBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents a request from a client to the server
@@ -11,8 +13,9 @@ import java.nio.CharBuffer;
 public class RequestParameters
 {
 	private final MethodType method;
-	private final String path; // TODO extract parameters
+	private final String path;
 	private final Headers requestHeaders;
+	private final Map<String, String> parameters;
 	private final CharBuffer body;
 
 	/**
@@ -24,9 +27,26 @@ public class RequestParameters
 	private RequestParameters(MethodType method, String path, Headers requestHeaders, CharBuffer body)
 	{
 		this.method = method;
-		this.path = path;
 		this.requestHeaders = requestHeaders;
 		this.body = body;
+		this.parameters = new HashMap<>();
+
+		// parse parameters
+		int startIndex = path.indexOf('?');
+		if (startIndex >= 0)
+		{
+			String[] params = path.substring(startIndex + 1).split("&");
+			path = path.substring(0, startIndex);
+			for (String param : params)
+			{
+				int splitIndex = param.indexOf('=');
+				String key = param.substring(0, splitIndex);
+				String value = param.substring(splitIndex + 1);
+				parameters.put(key, value);
+			}
+		}
+
+		this.path = path;
 	}
 
 	/**
@@ -59,6 +79,14 @@ public class RequestParameters
 	public CharBuffer getBody()
 	{
 		return body;
+	}
+
+	/**
+	 * @return GET parameters, if any
+	 */
+	public Map<String, String> getParameters()
+	{
+		return parameters;
 	}
 
 	/**

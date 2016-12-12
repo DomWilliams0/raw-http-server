@@ -5,6 +5,7 @@ import http.StatusCode;
 import http.method.ResponseParameters;
 
 import java.nio.CharBuffer;
+import java.util.Map;
 
 public class MethodGET implements MethodHandler
 {
@@ -19,16 +20,16 @@ public class MethodGET implements MethodHandler
 			"<html>" +
 				"<h1>Welcome to " + req.getPath() + "</h1>" +
 
-				// TODO display parsed parameters
+				// display parsed parameters
 				"<h3>GET parameters</h3>" +
-				"<p>TODO</p>" +
+				formatParams(req) +
 				"<hr>" +
 
 				// display parsed headers
 				"<h3>Request Headers</h3>" + MethodHandler.getRenderedHeaderList(req.getHeaders()) +
 				"<hr>" +
 
-			"</html>";
+				"</html>";
 
 		CharBuffer staticBuffer = CharBuffer.wrap(staticResponse.toCharArray());
 
@@ -40,4 +41,23 @@ public class MethodGET implements MethodHandler
 
 	}
 
+	/**
+	 * Formats the GET parameters of the request into HTML
+	 *
+	 * @param req The request parameters
+	 * @return An HTML unordered list, or a simple div if there are no parameters
+	 */
+	private String formatParams(RequestParameters req)
+	{
+		Map<String, String> parameters = req.getParameters();
+
+		if (parameters.isEmpty())
+			return "<div>None provided</div>";
+
+		StringBuilder list = new StringBuilder("<ul>");
+		parameters.forEach((k, v) ->
+			list.append(String.format("<li><strong>%s</strong>: %s</li>", k, v)));
+		list.append("</ul>");
+		return list.toString();
+	}
 }

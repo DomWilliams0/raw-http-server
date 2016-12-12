@@ -80,8 +80,6 @@ public class Request
 			return;
 		}
 
-		System.out.printf("%s - %s %s\n", clientAddress, reqBuilder.getMethod(), reqBuilder.getPath());
-
 		// parse rawMethod
 		MethodType methodType = MethodType.parse(reqBuilder.getMethod());
 		if (methodType == null)
@@ -91,9 +89,10 @@ public class Request
 		}
 
 		// TODO replace only sending status line above ^ with ResponseParameters
-		// TODO GET parameters
 
 		RequestParameters req = reqBuilder.build();
+
+		System.out.printf("%s - %s %s\n", clientAddress, req.getMethod(), req.getPath());
 
 		// handle rawMethod
 		MethodHandler handler = methodType.getHandler();
