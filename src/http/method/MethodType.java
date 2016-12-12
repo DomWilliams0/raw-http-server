@@ -11,7 +11,8 @@ public enum MethodType
 	HEAD,
 	POST,
 	PUT,
-	DELETE;
+	DELETE,
+	OPTIONS;
 
 	public static MethodType parse(String method)
 	{
@@ -32,9 +33,6 @@ public enum MethodType
 				return new MethodGET();
 			case POST:
 				return new MethodPOST();
-			case HEAD:
-			case PUT:
-			case DELETE:
 			default:
 				return new MethodUnimplemented();
 		}
